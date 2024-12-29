@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthDto } from './dto';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+  ) {}
   async signup(dto: AuthDto) {
     try {
       //generate the password hash
@@ -18,9 +22,11 @@ export class AuthService {
           hash: hash,
         },
       });
-      delete user.hash;
+
+      // delete user.hash;
       //return the saved user
-      return user;
+      // return user;
+      return this.signToken(user.id, user.email);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -51,8 +57,23 @@ export class AuthService {
       throw new ForbiddenException('Credentials Incorrect');
     }
 
-    delete user.hash;
+    // delete user.hash;
     //send back the user
-    return user;
+    // return user;
+    return this.signToken(user.id, user.email);
+  }
+
+  async signToken(
+    userId: number,
+    email: string,
+  ): Promise<{ access_token: string }> {
+    const payload = {
+      sub: userId,
+      email,
+    };
+
+    const token = await this.jwt.signAsync(payload);
+
+    return { access_token: token };
   }
 }
