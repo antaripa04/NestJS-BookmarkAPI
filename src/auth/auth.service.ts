@@ -11,6 +11,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
   ) {}
+
   async signup(dto: AuthDto) {
     try {
       //generate the password hash
